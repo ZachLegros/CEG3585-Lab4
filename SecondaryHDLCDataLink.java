@@ -37,7 +37,7 @@ public class SecondaryHDLCDataLink
 	{
 		physicalLayer = new PhysicalLayer();	
 		stationAdr = adr;
-	    vs = 0;
+	    vs = 0; // numéro de séquence pour prochaine frame à transmettre
 	    vr = 0;
 	    windowSize = 4;  //
 	    frameBuffer = new ArrayList<String>();
@@ -185,20 +185,27 @@ public class SecondaryHDLCDataLink
 	// sz - size of the window
 	private int checkNr(int nr, int rhs, int sz)
 	{
-		/*Completer cette methode */
-		
+		int lhs;
+        if ((rhs - sz) >= 0) {
+            lhs = rhs - sz; // left hand side = right hand side - size of the window
+            return ((nr <= rhs) && (nr >= lhs)) ? nr - lhs: 0;
+        }
+        lhs = sz + rhs; // left hand side = right hand side + size of the window 
+
+        return ((nr <= rhs) || (nr >= lhs)) ? ((sz + nr) % HdlcDefs.SNUM_SIZE_COUNT) - rhs : 0;
 	}
 	
 	// Helper method to get an RR-frame
 	// If wait is true then wait until a frame
-	// arrives (call getframe(true).
+	// arrives (call getframe(true)).
 	// If false, return null if no frame
-	// is available from the physical layer (call getframe(false)
+	// is available from the physical layer (call getframe(false))
 	// or frame received is not an RR frame.
 	private String getRRFrame(boolean wait)
 	{
-		
 		/*Completer cette methode */
+		String frame = getFrame(wait);
+		
 		return(frame);
 	}
 
