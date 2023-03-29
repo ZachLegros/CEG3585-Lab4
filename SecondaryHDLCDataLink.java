@@ -203,10 +203,18 @@ public class SecondaryHDLCDataLink
 	// or frame received is not an RR frame.
 	private String getRRFrame(boolean wait)
 	{
-		/*Completer cette methode */
 		String frame = getFrame(wait);
-		
-		return(frame);
+		// Check if frame is S-frame
+		String type = frame.substring(HdlcDefs.TYPE_START, HdlcDefs.TYPE_END);
+		if(type.equals(HdlcDefs.S_FRAME))
+		{
+			// Check if S-frame is an RR-frame and has P bit - 1
+			String sframe = frame.substring(HdlcDefs.S_START, HdlcDefs.S_END);
+			String pf = String.valueOf(frame.charAt(HdlcDefs.PF_IX));
+			if(sframe.equals(HdlcDefs.RR_SS) && pf.equals(HdlcDefs.P1))
+				return (frame);
+		}
+		return (null);
 	}
 
 	// For displaying the status of variables used
