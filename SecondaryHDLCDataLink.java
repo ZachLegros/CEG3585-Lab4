@@ -143,28 +143,53 @@ public class SecondaryHDLCDataLink
 		// Wait for poll - need an RR with P bit - 1
 		
 		/*Completer cette partie*/
-				
+		frame = getRRFrame(true);
+
 		// Send the SDU
 		// After each transmission, check for an ACK (RR)
 		// Use a sliding window
 		// Reception will be go back-N
 		String [] dataArr = BitString.splitString(sdu, HdlcDefs.MAX_DATA_SIZE_BYTES);
 		// Convert the strings into bitstrings
-		for(int ix=0 ; ix < dataArr.length; ix++)
-			dataArr[ix] = BitString.stringToBitString(dataArr[ix]);
+		for(int ix=0 ; ix < dataArr.length; ix++) {
+			dataArr[ix] = BitString.stringToBitString(dataArr[ix]);	
+		}
 		// Loop to transmit frames
 		/*Completer la boucle*/
-		while(  )
+		int ack_total = 0;
+		int ix = 0;
+		while(ack_total < dataArr.length)
 		{
 			// Send frame if window not closed and data not all transmitted
-			if(  )
+			if(rhsWindow != vs && ix < dataArr.length)
 			{
+				frame = HdlcDefs.FLAG +	
+				BitString.intToBitString(stationAdr,HdlcDefs.ADR_SIZE_BITS) +
+				HdlcDefs.I_FRAME +
+				BitString.intToBitString(vs, HdlcDefs.SNUM_SIZE_BITS) +
+				(ix == dataArr.length - 1 ? HdlcDefs.P1 : HdlcDefs.P0) +
+				BitString.intToBitString(vr, HdlcDefs.SNUM_SIZE_BITS) +
+				dataArr[ix] +
+				HdlcDefs.FLAG;
+				
+				vs = (vs + 1) % HdlcDefs.SNUM_SIZE_COUNT;
+				frameBuffer.add(frame);
+				// System.out.println("Message sent: "+"'"+BitString.bitStringToString(dataArr[ix])+"'");
 				displayDataXchngState("Data Link Layer: prepared and buffered I frame >"+BitString.displayFrame(frame)+"<");
+				physicalLayer.transmit(frame);
+				ix++;
 			}
 			// Check for RR
 			frame = getRRFrame(false); // just poll
 			if(frame != null) // have a frame
 			{
+				int nr = BitString.bitStringToInt(frame.substring(HdlcDefs.NR_START, HdlcDefs.NR_END));
+				int ack_num = checkNr(nr, rhsWindow, windowSize); // number of frames acknowledged
+				for (int i=0; i<ack_num; i++) {
+					frameBuffer.remove(0);
+				} // remove number of frames acknowledged from buffer
+				rhsWindow = (rhsWindow + ack_num) % HdlcDefs.SNUM_SIZE_COUNT;
+				ack_total += ack_num;
 				displayDataXchngState("received an RR frame (ack) >"+BitString.displayFrame(frame)+"<");
 			}	
 		}
@@ -205,16 +230,19 @@ public class SecondaryHDLCDataLink
 	{
 		String frame = getFrame(wait);
 		// Check if frame is S-frame
-		String type = frame.substring(HdlcDefs.TYPE_START, HdlcDefs.TYPE_END);
-		if(type.equals(HdlcDefs.S_FRAME))
+		if (frame != null)
 		{
-			// Check if S-frame is an RR-frame and has P bit - 1
-			String sframe = frame.substring(HdlcDefs.S_START, HdlcDefs.S_END);
-			String pf = String.valueOf(frame.charAt(HdlcDefs.PF_IX));
-			if(sframe.equals(HdlcDefs.RR_SS) && pf.equals(HdlcDefs.P1))
-				return (frame);
+			String type = frame.substring(HdlcDefs.TYPE_START, HdlcDefs.TYPE_END);
+			if(type.equals(HdlcDefs.S_FRAME))
+			{
+				// Check if S-frame is an RR-frame and has P bit - 0
+				String sframe = frame.substring(HdlcDefs.S_START, HdlcDefs.S_END);
+				String pf = String.valueOf(frame.charAt(HdlcDefs.PF_IX));
+				if(sframe.equals(HdlcDefs.RR_SS) && pf.equals(HdlcDefs.P0))
+					return frame;
+			}
 		}
-		return (null);
+		return null;
 	}
 
 	// For displaying the status of variables used

@@ -4,7 +4,8 @@ public class SecondaryStation
 {	
 	public static void main(String[] args) throws InterruptedException, IOException 
 	{
-		String eol = System.getProperty("line.separator");
+		// String eol = System.getProperty("line.separator");
+		String eol = "\r\n";
         String message = "Message for testing data transfer. "+eol+
                          "The HDLC protocol is designed to support communication over "+eol+
                          "a physical link between physically connected stations."+eol+
